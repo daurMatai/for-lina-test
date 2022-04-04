@@ -1,0 +1,61 @@
+version: '3'
+services:
+
+  forLina-app:
+    build:
+      context: ./app/
+      dockerfile: ./Dockerfile
+    image: digitalocean.com/php
+    container_name: forLina-app
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www/app/
+    volumes:
+      - ./:/var/www/app/
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - forLina-network
+
+  forLina-db:
+    image: postgres:9.6
+    container_name: forLina-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "${DB_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - forLina-dbdata:/var/lib/postgresql/
+      - ./docker/postgres/:/docker-entrypoint-initdb.d/
+    networks:
+      - forLina-network
+
+  forLina-webserver:
+    image: nginx:alpine
+    container_name: forLina-webserver
+    restart: unless-stopped
+    tty: true
+    depends_on:
+      - forLina-app
+    ports:
+      - ${HTTP_PORT}:80
+    volumes:
+      - ./:/var/www/app
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/${APP_ENV}/conf.d/:/etc/nginx/conf.d/
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    networks:
+      - forLina-network
+
+#Docker Networks
+networks:
+  forLina-network:
+    driver: bridge
+
+#Volumes
+volumes:
+  forLina-dbdata:
+    driver: local
