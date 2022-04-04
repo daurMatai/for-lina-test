@@ -3,7 +3,7 @@
 - docker-compose
 
 ## start
-- `docker run --rm -v $(pwd):/app composer install`
+- `docker run --rm -v $(pwd):/app composer install --ignore-platform-reqs`
 - `cp .env.example .env`
 - `docker-compose up -d` 
 - `docker-compose exec forLina-app bash`
